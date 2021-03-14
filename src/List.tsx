@@ -1,5 +1,5 @@
 import { Table, Empty, message } from "antd";
-import useFetchData from "./cumstom-hook/useFetchData";
+import useFetchData from "./CustomHooks/useFetchData";
 
 function List() {
     const {

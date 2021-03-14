@@ -4,6 +4,7 @@ import request from "axios";
 interface Config {
     url: string,
     page?: number,
+    pageSize?: number,
     errorHandler: Function
 }
 
@@ -25,12 +26,25 @@ function getData(url: string, page: number, pageSize: number, timeout = 15000) {
     })
 }
 
+
+/**
+* 1. 翻页和加载更多
+    通过调用hook返回的setPage和loadMore实现（也可以实现对page操作提供更简单的api例如gotoPage/nextPage/prevPage等）
+  2. 错误处理
+    对于错误只关心如何处理，不需要保存状态，所以通过config中配置errorHandler回调方法来抛出Error到外部
+*/
+
 export default function useFetchData(config: Config): HookData {
-    const { url, page: initialPage = 1, errorHandler = () => { } } = config
+    const {
+        url,
+        page: initialPage = 1,
+        pageSize: initialPageSize = 10,
+        errorHandler = () => { }
+    } = config
     const [page, setPage] = useState(initialPage);
-    const [resData, setResData] = useState(null);
-    const [pageSize, setPageSize] = useState(10);
+    const [pageSize, setPageSize] = useState(initialPageSize);
     const [total, setTotal] = useState(0);
+    const [resData, setResData] = useState(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -64,6 +78,6 @@ export default function useFetchData(config: Config): HookData {
         pageSize,
         loading,
         resData,
-        total: total + 100
+        total
     }
 }
