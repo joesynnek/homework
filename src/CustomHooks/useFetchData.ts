@@ -1,24 +1,6 @@
 import { useState, useEffect } from "react";
 import request from "axios";
 
-interface Config {
-    url: string,
-    page?: number,
-    pageSize?: number,
-    errorHandler: Function
-}
-
-interface HookData {
-    setPage: Function,
-    setPageSize: Function,
-    loadMore: Function,
-    page: number,
-    pageSize: number,
-    loading: boolean,
-    resData: any,
-    total: number
-}
-
 function getData(url: string, page: number, pageSize: number, timeout = 15000) {
     return request.get(`${url}?page=${page}&pageSize=${pageSize}`, {
         timeout
@@ -26,25 +8,44 @@ function getData(url: string, page: number, pageSize: number, timeout = 15000) {
     })
 }
 
+// type Status = "success" | "error" | "loading";
 
-/**
-* 1. 翻页和加载更多
-    通过调用hook返回的setPage和loadMore实现（也可以实现对page操作提供更简单的api例如gotoPage/nextPage/prevPage等）
-  2. 错误处理
-    对于错误只关心如何处理，不需要保存状态，所以通过config中配置errorHandler回调方法来抛出Error到外部
-*/
+interface Config {
+    url: string,  // 请求url
+    page?: number, // 初始页码
+    pageSize?: number,  // 初始页容量
+    onSuccess: Function, // 成功回调 function(response)
+    onError: Function  // 失败回调　function(error)
+}
 
-export default function useFetchData(config: Config): HookData {
+interface HookResponse {
+    // setPage/setPageSize/loadMore 这三个方法用于加载更多数据（除此之外还可以定义如gotoPage/nextPage/prevPage等方法）
+    setPage: Function,
+    setPageSize: Function,
+    loadMore: Function,
+    // 当前页和当前页容量
+    page: number,
+    pageSize: number,
+    // loading状态
+    loading: boolean,
+    // 请求成功返回对象
+    response: any,
+    // 错误对象
+    error: Error | null
+}
+
+export default function useFetchData(config: Config): HookResponse {
     const {
         url,
         page: initialPage = 1,
         pageSize: initialPageSize = 10,
-        errorHandler = () => { }
-    } = config
+        onSuccess = () => { },
+        onError = () => { }
+    } = config;
     const [page, setPage] = useState(initialPage);
+    const [error, setError] = useState(null);
     const [pageSize, setPageSize] = useState(initialPageSize);
-    const [total, setTotal] = useState(0);
-    const [resData, setResData] = useState(null);
+    const [response, setResponse] = useState(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -52,17 +53,17 @@ export default function useFetchData(config: Config): HookData {
         getData(url, page, pageSize).then(res => {
             const { data } = res
             if (data.code === 1) {
-                setLoading(false);
-                setResData(data);
-                setTotal(data.count);
+                onSuccess(res);
+                setResponse(data);
             } else {
-                setLoading(false);
-                setResData(null);
+                setResponse(null);
                 throw new Error(data.message);
             }
         }).catch(err => {
-            console.log(err)
-            errorHandler(err);
+            setError(error);
+            onError(err);
+        }).finally(() => {
+            setLoading(false);
         })
     }, [url, page, pageSize]);
 
@@ -77,7 +78,7 @@ export default function useFetchData(config: Config): HookData {
         page,
         pageSize,
         loading,
-        resData,
-        total
+        error,
+        response
     }
 }

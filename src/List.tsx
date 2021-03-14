@@ -1,4 +1,5 @@
-import { Table, Empty, message } from "antd";
+import { Table, message } from "antd";
+import { useState } from "react";
 import useFetchData from "./CustomHooks/useFetchData";
 
 function List() {
@@ -8,16 +9,22 @@ function List() {
         setPage,
         setPageSize,
         loading,
-        resData,
-        total
+        response
     } = useFetchData({
         url: 'http://localhost:8080/data',
-        errorHandler: (error: Error) => {
+        onSuccess: (response: Object) => {
+            console.log(response);
+        },
+        onError: (error: Error) => {
             message.error(error.message);
             setPage(1);
-            setPageSize(10);
         }
     });
+
+    const [total, setTotal] = useState(0);
+    if (response && response.count !== total) {
+        setTotal(response.count);
+    }
 
 
     function getColumns() {
@@ -39,13 +46,14 @@ function List() {
         setPageSize(newPageSize);
     }
 
-    const dataSource: Array<Object> = resData === null ? [] : resData.data.list;
+    const dataSource: Array<Object> = !response ? [] : response.data.list.slice(0, pageSize);
     return (
         <>
-            <div style={{ height: "100%", overflow: "auto" }}>
+            <div>
                 <Table
                     dataSource={dataSource}
                     columns={getColumns()}
+                    rowKey="id"
                     pagination={{
                         current: page,
                         pageSize,
@@ -53,6 +61,9 @@ function List() {
                         onChange: handlePageChange
                     }}
                     loading={loading}
+                    scroll={{
+                        y: 500
+                    }}
                 />
             </div>
         </>
