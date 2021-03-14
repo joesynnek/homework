@@ -3,6 +3,7 @@ import { useState } from "react";
 import useFetchData from "./CustomHooks/useFetchData";
 
 function List() {
+    const [total, setTotal] = useState(0);
     const {
         page,
         pageSize,
@@ -12,19 +13,16 @@ function List() {
         response
     } = useFetchData({
         url: 'http://localhost:8080/data',
-        onSuccess: (response: Object) => {
-            console.log(response);
+        onSuccess: (response: any) => {
+            if (response && response.data.count !== total) {
+                setTotal(response.data.count);
+            }
         },
         onError: (error: Error) => {
             message.error(error.message);
             setPage(1);
         }
     });
-
-    const [total, setTotal] = useState(0);
-    if (response && response.count !== total) {
-        setTotal(response.count);
-    }
 
 
     function getColumns() {
